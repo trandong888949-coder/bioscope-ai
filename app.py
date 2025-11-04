@@ -47,6 +47,21 @@ def analyze_bio_image_streamlit(image_data, user_prompt, context_role):
 
 # --- Cấu hình Giao diện Streamlit (Giữ nguyên như cũ) ---
 st.set_page_config(page_title="BioScope AI", layout="wide")
+# --- BẮT ĐẦU CODE MỚI THÊM VÀO (Sidebar) ---
+st.sidebar.title("🔬 Giới thiệu BioScope AI")
+st.sidebar.info(
+    """
+    Đây là công cụ ứng dụng Gemini AI để phân tích hình ảnh Sinh học THPT. 
+    Ứng dụng này giúp học sinh tự học, tự kiểm tra kiến thức và hỗ trợ 
+    giáo viên trong công tác giảng dạy.
+    """
+)
+st.sidebar.markdown("---")
+st.sidebar.subheader("Thông tin tác giả")
+st.sidebar.write("Trần Thụy Đông Hòa") # Bạn có thể sửa lại tên nếu muốn
+st.sidebar.write("Trường THPT Marie Curie")
+st.sidebar.write("Email: hoattd@thptmariecuriehem.edu.vn")
+# --- KẾT THÚC CODE MỚI ---
 st.title("🔬 BioScope AI: Phân tích Hình ảnh Sinh học")
 st.markdown("---")
 
