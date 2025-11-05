@@ -179,7 +179,7 @@ with tab2:
             st.markdown(user_question)
         st.session_state.messages.append({"role": "user", "content": user_question})
         if "vector_store" not in st.session_state:
-            st.warning("Vui lòng tải lên và 'Xử lý Tài liệu PDF' ở Sidebar trước khi đặt câu?"")
+            st.warning("Vui lòng tải lên và 'Xử lý Tài liệu PDF' ở Sidebar trước khi đặt câu?")
         else:
             with st.spinner("AI đang tìm kiếm trong tài liệu..."):
                 response = answer_pdf_question(GEMINI_API_KEY, user_question)
