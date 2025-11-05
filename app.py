@@ -1,4 +1,4 @@
-# app.py (Phiên bản 4.0 - Cấp độ 3: Đã thêm RAG Hỏi-đáp PDF)
+# app.py (Phiên bản 4.1 - Sửa lỗi LangChain Update)
 
 import streamlit as st
 from google import genai
@@ -6,10 +6,10 @@ from PIL import Image
 import io
 import os
 
-# --- Thư viện mới cho Cấp độ 3 (RAG) ---
+# --- Thư viện mới cho Cấp độ 3 (ĐÃ SỬA LỖI IMPORT) ---
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
-from langchain.vectorstores import FAISS
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import FAISS # SỬA LỖI 1: Import từ langchain_community
+from langchain_text_splitters import RecursiveCharacterTextSplitter # SỬA LỖI 2: Import từ langchain_text_splitters
 from langchain.chains.question_answering import load_qa_chain
 from PyPDF2 import PdfReader
 # ----------------------------------------
@@ -54,7 +54,6 @@ def get_vector_store(text_chunks, api_key):
     try:
         embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=api_key)
         vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
-        # Lưu vào session_state để tái sử dụng
         st.session_state.vector_store = vector_store
         st.sidebar.success("Đã xử lý xong tài liệu PDF!")
     except Exception as e:
@@ -65,23 +64,24 @@ def answer_pdf_question(api_key, user_question):
     try:
         llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key, temperature=0.3)
         chain = load_qa_chain(llm, chain_type="stuff")
-        # Lấy vector_store từ session_state
         vector_store = st.session_state.vector_store
         docs = vector_store.similarity_search(user_question)
-        response = chain.run(input_documents=docs, question=user_question)
-        return response
+        
+        # SỬA LỖI 3: Dùng .invoke thay vì .run (cú pháp mới)
+        response = chain.invoke({"input_documents": docs, "question": user_question}, return_only_outputs=True)
+        return response['output_text']
+    
     except Exception as e:
         return f"Lỗi khi trả lời câu hỏi: {e}"
 
 # --- Cấu hình Trang & API Key ---
 st.set_page_config(page_title="BioScope AI", layout="wide")
 
-# Lấy API Key từ Secrets
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 except KeyError:
     st.error("Lỗi: Không tìm thấy GEMINI_API_KEY. Vui lòng thêm vào Streamlit Secrets.")
-    st.stop() # Dừng ứng dụng nếu không có API Key
+    st.stop() 
 
 # --- Giao diện Sidebar (Đã nâng cấp Cấp 3) ---
 st.sidebar.title("🔬 Giới thiệu BioScope AI")
@@ -94,7 +94,6 @@ st.sidebar.info(
 )
 st.sidebar.markdown("---")
 
-# --- Tính năng Cấp 3 (Tải PDF lên Sidebar) ---
 st.sidebar.subheader("📚 Tính năng Hỏi-đáp Tài liệu")
 st.sidebar.write("Tải lên file PDF (ví dụ: Sách giáo khoa, sách Campbell) để AI đọc và trả lời câu hỏi.")
 pdf_docs = st.sidebar.file_uploader("Tải lên file PDF của bạn", accept_multiple_files=True, type="pdf")
@@ -122,12 +121,9 @@ tab1, tab2 = st.tabs(["🖼️ Phân tích Hình ảnh (Cấp 2)", "📚 Hỏi-�
 # --- TAB 1: PHÂN TÍCH HÌNH ẢNH (Như Cấp 2) ---
 with tab1:
     st.header("Chức năng Phân tích Hình ảnh & Chấm điểm")
-    
     uploaded_file = st.file_uploader("1. Tải lên hình ảnh tiêu bản/thí nghiệm:", type=["png", "jpg", "jpeg"])
-
     if uploaded_file:
         col_input, col_output = st.columns([2, 3]) 
-
         with col_input:
             st.subheader("Bảng điều khiển")
             st.image(uploaded_file, caption=f"Ảnh đã tải lên: {uploaded_file.name}", use_column_width=True)
@@ -135,21 +131,17 @@ with tab1:
                 "2. Chọn Vai trò (Tối ưu hóa phản hồi AI):",
                 ("Học sinh (Tự học & Kiểm tra)", "Giáo viên (Kiểm tra & Tạo tư liệu)")
             )
-            
             if role == "Học sinh (Tự học & Kiểm tra)":
                 context = "Học sinh tự học"
                 default_prompt = "Đây có phải là tiêu bản/thí nghiệm đúng không? Hãy giải thích hiện tượng và đặt cho tôi 2 câu hỏi ôn tập."
             else:
                 context = "Giáo viên chuyên môn"
                 default_prompt = "Đánh giá tính chính xác. Nếu đúng, gợi ý một hoạt động tiếp theo. Nếu sai, giải thích lỗi sai sinh học cơ bản."
-                
             prompt = st.text_area("3. Câu hỏi chi tiết của bạn:", default_prompt, height=150)
             request_scoring = st.checkbox("🔬 Yêu cầu AI chấm điểm hình ảnh (Thang 10)")
             submit_button = st.button("4. Phân tích Hình ảnh")
-
         with col_output:
             st.subheader("Kết quả phân tích Hình ảnh")
-            
             if submit_button: 
                 if prompt:
                     with st.spinner('Đang phân tích hình ảnh bằng Gemini AI...'):
@@ -164,7 +156,6 @@ with tab1:
                                 "\n**Nhận xét chi tiết:** [Giải thích tại sao, chỉ rõ ưu điểm và nhược điểm]"
                             )
                             final_prompt_to_ai += scoring_instruction
-                        
                         result = analyze_bio_image_streamlit(GEMINI_API_KEY, uploaded_file, final_prompt_to_ai, context)
                         st.success("Phân tích Hoàn thành!")
                         with st.expander("Bấm vào đây để xem kết quả chi tiết", expanded=True):
@@ -178,34 +169,21 @@ with tab1:
 with tab2:
     st.header("Chức năng Hỏi-đáp dựa trên Tài liệu PDF")
     st.info("Vui lòng tải lên và xử lý file PDF ở thanh Sidebar bên trái trước khi đặt câu hỏi.")
-    
-    # Khởi tạo session_state cho lịch sử chat
     if "messages" not in st.session_state:
         st.session_state.messages = []
-    
-    # Hiển thị lịch sử chat
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-
-    # Ô nhập câu hỏi của người dùng
     user_question = st.chat_input("Đặt câu hỏi về tài liệu PDF bạn đã tải lên...")
-
     if user_question:
-        # Hiển thị câu hỏi của người dùng
         with st.chat_message("user"):
             st.markdown(user_question)
         st.session_state.messages.append({"role": "user", "content": user_question})
-        
-        # Kiểm tra xem vector store đã sẵn sàng chưa
         if "vector_store" not in st.session_state:
             st.warning("Vui lòng tải lên và 'Xử lý Tài liệu PDF' ở Sidebar trước khi đặt câu hỏi.")
         else:
-            # Lấy câu trả lời từ AI
             with st.spinner("AI đang tìm kiếm trong tài liệu..."):
                 response = answer_pdf_question(GEMINI_API_KEY, user_question)
-                
-                # Hiển thị câu trả lời của AI
                 with st.chat_message("assistant"):
                     st.markdown(response)
                 st.session_state.messages.append({"role": "assistant", "content": response})
