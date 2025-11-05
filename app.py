@@ -1,4 +1,4 @@
-# app.py (Phiên bản 4.1 - Sửa lỗi LangChain Update)
+# app.py (Phiên bản 4.2 - Sửa lỗi Import load_qa_chain)
 
 import streamlit as st
 from google import genai
@@ -8,9 +8,9 @@ import os
 
 # --- Thư viện mới cho Cấp độ 3 (ĐÃ SỬA LỖI IMPORT) ---
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
-from langchain_community.vectorstores import FAISS # SỬA LỖI 1: Import từ langchain_community
-from langchain_text_splitters import RecursiveCharacterTextSplitter # SỬA LỖI 2: Import từ langchain_text_splitters
-from langchain.chains.question_answering import load_qa_chain
+from langchain_community.vectorstores import FAISS # Đã sửa ở v4.1
+from langchain_text_splitters import RecursiveCharacterTextSplitter # Đã sửa ở v4.1
+from langchain.chains import load_qa_chain # SỬA LỖI MỚI (v4.2): Import từ langchain.chains
 from PyPDF2 import PdfReader
 # ----------------------------------------
 
@@ -67,7 +67,6 @@ def answer_pdf_question(api_key, user_question):
         vector_store = st.session_state.vector_store
         docs = vector_store.similarity_search(user_question)
         
-        # SỬA LỖI 3: Dùng .invoke thay vì .run (cú pháp mới)
         response = chain.invoke({"input_documents": docs, "question": user_question}, return_only_outputs=True)
         return response['output_text']
     
@@ -180,7 +179,7 @@ with tab2:
             st.markdown(user_question)
         st.session_state.messages.append({"role": "user", "content": user_question})
         if "vector_store" not in st.session_state:
-            st.warning("Vui lòng tải lên và 'Xử lý Tài liệu PDF' ở Sidebar trước khi đặt câu hỏi.")
+            st.warning("Vui lòng tải lên và 'Xử lý Tài liệu PDF' ở Sidebar trước khi đặt câu?"")
         else:
             with st.spinner("AI đang tìm kiếm trong tài liệu..."):
                 response = answer_pdf_question(GEMINI_API_KEY, user_question)
